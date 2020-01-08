@@ -1,0 +1,15 @@
+{
+    "require": {
+        "psr/log": "^1.1",
+        "monolog/monolog": "^2.0"
+    },
+    "require-dev": {
+        "roave/security-advisories": "dev-master",
+        "phpunit/phpunit": "^8.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "Lfbn\\LoggerTrait\\": "src/"
+        }
+    }
+}
