@@ -1,78 +1,103 @@
 # Logger Trait
 
-This is a trait that allows you to add logging capabilities to any class.
+This is a Trait that allows to have logging capabilities in any class.
 
-It uses Monolog, and by default streams to ```php php://output``` but you can change this. Check instructions bellow.
+By default, it uses Monolog and streams to standard output, but you can override this behaviour.
+
+## Installation
+
+```bash
+composer require lfbn/logger-trait
+```
 
 ## Usage
 
+### Using the default behaviour
+
 ```php
-// In your class add the use of the Trait
+// In the class you want, add the use of the Trait.
 use LoggerTrait;
 
 (...)
 
-// You need to call this method to the logger create an instance of the logger.
-$this->initLogger();
-
-(...)
-
-// Or use your own logger.
-$this->setLogger($logger);
-
 // After that, you can use it.
 $this->logError('Some message...', ['some context']);
-
-// And also interpolate the message.
-$this->logError(
-    self::interpolateMessage(
-        'Some {visibility} message...',
-        ['visibility'=>
-    ), 
-    ['some context']
-);
 ```
 
-### Changing behaviour
+### Changing name, stream or minimum level
 
 ```php
-// In your class add the following to change the logger.
-
-// logger name
+// Implement the following protected properties.
+/* @var string */
 protected static $loggerName = 'my-logger-name';
 
-// logger stream
-protected static $loggerStream = 'php://stderr';
+/* @var string */
+protected static $loggerStream = 'php://stdout';
 
-// logger stream
+/* @var string */
 protected static $loggerMinimumLevel = LogLevel::DEBUG;
 ```
 
-### Overriding initLogger
+### Overriding the default behaviour
 
 ```php
-// In your class add the use of the Trait
-use LoggerTrait;
+class MyClass {
+   protected function initLogger(): bool
+   {
+       $this->logger = new \Monolog\Logger('Overriding default logger: '.$this->getLoggerName());
 
-(...)
+       try {
+           $handler = new StreamHandler(
+               $this->getLoggerStream(),
+               $this->getLoggerMinimumLevel()
+           );
+           $this->logger->pushHandler($handler);
+       } catch (Exception $e) {
+           $this->logger = new NullLogger();
 
-// You can override initLogger method with your own.
-public function initLogger()
+           return false;
+       }
 
-(...)
-
-// Or use your own logger.
-$this->setLogger($logger);
-
-// After that, you can use it.
-$this->logError('Some message...', ['some context']);
-
-// And also interpolate the message.
-$this->logError(
-    self::interpolateMessage(
-        'Some {visibility} message...',
-        ['visibility'=>
-    ), 
-    ['some context']
-);
+       return true;
+   }
+}
 ```
+
+### Inject your own logger
+
+```php
+class Test {
+    use \Lfbn\LoggerTrait\LoggerTrait;
+    public function test(): void
+    {
+        $this->logDebug('Hello TEST!');
+    }
+}
+
+$logger = new \Monolog\Logger('test4-my-own-logger');
+
+try {
+    $handler = new StreamHandler(
+        'php://stdout',
+        'debug'
+    );
+    $logger->pushHandler($handler);
+} catch (Exception $e) {
+    $logger = new NullLogger();
+
+    return false;
+}
+
+$myClass = (new Test());
+$myClass->setLogger($logger);
+$myClass->test();
+```
+
+### Interpolate messages
+
+$this->logWarning(
+            self::interpolateMessage(
+                'Hello my {private} TEST5!',
+                ['private' => 'message']
+            ),
+        );

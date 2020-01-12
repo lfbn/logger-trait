@@ -10,7 +10,6 @@ use Monolog\Logger;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 use Psr\Log\NullLogger;
-use RuntimeException;
 
 /**
  * Trait LoggerTrait
@@ -31,48 +30,6 @@ trait LoggerTrait
     /* @var LoggerInterface */
     protected $logger;
 
-    /* @return $this */
-    protected function initLogger(): self
-    {
-        $this->logger = new Logger($this->getLoggerName());
-
-        try {
-            $handler = new StreamHandler(
-                $this->getLoggerStream(),
-                $this->getLoggerMinimumLevel()
-            );
-            $this->logger->pushHandler($handler);
-        } catch (Exception $e) {
-            $this->logger = new NullLogger();
-        }
-
-        return $this;
-    }
-
-    /**
-     * @return string
-     */
-    private function getLoggerName(): string
-    {
-        return self::$loggerName ?? self::$_loggerName;
-    }
-
-    /**
-     * @return string
-     */
-    private function getLoggerStream(): string
-    {
-        return self::$loggerStream ?? self::$_loggerStream;
-    }
-
-    /**
-     * @return string
-     */
-    private function getLoggerMinimumLevel(): string
-    {
-        return self::$loggerMinimumLevel ?? self::$_loggerMinimumLevel;
-    }
-
     /**
      * @param LoggerInterface $logger
      * @return LoggerTrait
@@ -84,13 +41,57 @@ trait LoggerTrait
         return $this;
     }
 
+    /* @return bool */
+    protected function initLogger(): bool
+    {
+        $this->logger = new Logger($this->getLoggerName());
+
+        try {
+            $handler = new StreamHandler(
+                $this->getLoggerStream(),
+                $this->getLoggerMinimumLevel()
+            );
+            $this->logger->pushHandler($handler);
+        } catch (Exception $e) {
+            $this->logger = new NullLogger();
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @return string
+     */
+    private function getLoggerName(): string
+    {
+        return !empty(self::$loggerName) ? self::$loggerName : self::$_loggerName;
+    }
+
+    /**
+     * @return string
+     */
+    private function getLoggerStream(): string
+    {
+        return !empty(self::$loggerStream) ? self::$loggerStream : self::$_loggerStream;
+    }
+
+    /**
+     * @return string
+     */
+    private function getLoggerMinimumLevel(): string
+    {
+        return !empty(self::$loggerMinimumLevel) ? self::$loggerMinimumLevel : self::$_loggerMinimumLevel;
+    }
+
     /**
      * error message
      * @param string $message
      * @param array $context
      * @return $this
      */
-    public function logEmergency(string $message, array $context = array()): self
+    protected function logEmergency(string $message, array $context = array()): self
     {
         return $this->_log(
             $message,
@@ -105,7 +106,7 @@ trait LoggerTrait
      * @param array $context
      * @return $this
      */
-    public function logAlert(string $message, array $context = array()): self
+    protected function logAlert(string $message, array $context = array()): self
     {
         return $this->_log(
             $message,
@@ -120,7 +121,7 @@ trait LoggerTrait
      * @param array $context
      * @return $this
      */
-    public function logCritical(string $message, array $context = array()): self
+    protected function logCritical(string $message, array $context = array()): self
     {
         return $this->_log(
             $message,
@@ -135,7 +136,7 @@ trait LoggerTrait
      * @param array $context
      * @return $this
      */
-    public function logError(string $message, array $context = array()): self
+    protected function logError(string $message, array $context = array()): self
     {
         return $this->_log(
             $message,
@@ -150,7 +151,7 @@ trait LoggerTrait
      * @param array $context
      * @return $this
      */
-    public function logWarning(string $message, array $context = array()): self
+    protected function logWarning(string $message, array $context = array()): self
     {
         return $this->_log(
             $message,
@@ -165,7 +166,7 @@ trait LoggerTrait
      * @param array $context
      * @return $this
      */
-    public function logNotice(string $message, array $context = array()): self
+    protected function logNotice(string $message, array $context = array()): self
     {
         return $this->_log(
             $message,
@@ -180,7 +181,7 @@ trait LoggerTrait
      * @param array $context
      * @return $this
      */
-    public function logInfo(string $message, array $context = array()): self
+    protected function logInfo(string $message, array $context = array()): self
     {
         return $this->_log(
             $message,
@@ -195,7 +196,7 @@ trait LoggerTrait
      * @param array $context
      * @return $this
      */
-    public function logDebug(string $message, array $context = array()): self
+    protected function logDebug(string $message, array $context = array()): self
     {
         return $this->_log(
             $message,
@@ -210,7 +211,7 @@ trait LoggerTrait
      * @param array $context
      * @return LoggerTrait
      */
-    public function log(string $level, string $message, array $context = array()): self
+    protected function log(string $level, string $message, array $context = array()): self
     {
         return $this->_log(
             $message,
@@ -225,7 +226,7 @@ trait LoggerTrait
      * @return string
      * @link https://www.php-fig.org/psr/psr-3/#12-message
      */
-    public static function interpolateMessage($message, array $context = array()): string
+    protected static function interpolateMessage($message, array $context = array()): string
     {
         $replace = array();
 
@@ -246,7 +247,7 @@ trait LoggerTrait
      */
     private function _log(string $message, $context, string $level): self
     {
-        $this->checkLoggerPreConditions();
+        $this->initLoggerAsDefaultIfDontExists();
 
         if (!method_exists($this->logger, $level)) {
             throw new InvalidArgumentException('The logger doesn\'t have the level you requested.');
@@ -257,10 +258,10 @@ trait LoggerTrait
         return $this;
     }
 
-    private function checkLoggerPreConditions(): void
+    private function initLoggerAsDefaultIfDontExists(): void
     {
         if (!isset($this->logger)) {
-            throw new RuntimeException('This trait should be initialized first. Use initLogger method.');
+            $this->initLogger();
         }
     }
 }
