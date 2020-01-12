@@ -95,9 +95,11 @@ $myClass->test();
 
 ### Interpolate messages
 
+```php
 $this->logWarning(
             self::interpolateMessage(
                 'Hello my {private} TEST5!',
                 ['private' => 'message']
             ),
         );
+```
