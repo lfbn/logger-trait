@@ -84,8 +84,6 @@ try {
     $logger->pushHandler($handler);
 } catch (Exception $e) {
     $logger = new NullLogger();
-
-    return false;
 }
 
 $myClass = (new Test());
